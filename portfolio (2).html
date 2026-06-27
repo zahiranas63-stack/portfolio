@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Editor &amp; Motion Designer — Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Work+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  /* ====== TOKENS ====== */
+  :root{
+    --bg-void:#0c0b0a;
+    --bg-panel:#171512;
+    --bg-panel-2:#1f1c18;
+    --ink:#f3eee6;
+    --ink-muted:#8c8576;
+    --ink-faint:#5c574c;
+    --accent-primary:#3d7fe0;
+    --accent-scope:#4faf9d;
+    --hairline:#2a2722;
+    --hairline-soft:#201d19;
+    --font-display:'Fraunces', serif;
+    --font-body:'Work Sans', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+    --bar-h:26px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg-void);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-weight:400;
+    -webkit-font-smoothing:antialiased;
+    padding-top:calc(var(--bar-h) + 64px);
+    padding-bottom:var(--bar-h);
+    overflow-x:hidden;
+  }
+
+  a{color:inherit;}
+  ::selection{background:var(--accent-primary); color:var(--ink);}
+
+  :focus-visible{
+    outline:2px solid var(--accent-primary);
+    outline-offset:3px;
+  }
+
+  /* ====== GRAIN OVERLAY ====== */
+  .grain{
+    position:fixed; inset:0;
+    pointer-events:none;
+    z-index:5;
+    opacity:0.035;
+    mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* ====== LETTERBOX BARS ====== */
+  .letterbox{
+    position:fixed; left:0; right:0;
+    height:var(--bar-h);
+    background:#000;
+    z-index:40;
+    display:flex; align-items:center;
+    padding:0 18px;
+    justify-content:space-between;
+    font-family:var(--font-mono);
+    font-size:10px;
+    letter-spacing:.12em;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+  }
+  .letterbox--top{top:0; border-bottom:1px solid var(--hairline-soft);}
+  .letterbox--bottom{bottom:0; border-top:1px solid var(--hairline-soft);}
+  .letterbox .dots{display:flex; gap:6px;}
+  .letterbox .dots span{width:3px; height:3px; border-radius:50%; background:var(--ink-faint); display:block;}
+
+  /* ====== NAV / SCRUBBER ====== */
+  .nav{
+    position:fixed;
+    top:var(--bar-h); left:0; right:0;
+    height:64px;
+    z-index:30;
+    background:rgba(12,11,10,0.86);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--hairline);
+    display:flex;
+    align-items:center;
+    padding:0 28px;
+    gap:24px;
+  }
+  .nav__mark{
+    font-family:var(--font-display);
+    font-size:18px;
+    font-weight:600;
+    letter-spacing:.01em;
+    white-space:nowrap;
+  }
+  .nav__mark span{color:var(--accent-primary);}
+  .nav__links{
+    display:flex; gap:22px;
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+    flex:1;
+  }
+  .nav__links a{text-decoration:none; transition:color .2s;}
+  .nav__links a:hover{color:var(--ink);}
+  .nav__tc{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    color:var(--ink-muted);
+    display:flex; align-items:center; gap:8px;
+    white-space:nowrap;
+  }
+  .nav__tc .rec{
+    width:6px; height:6px; border-radius:50%;
+    background:#d9492f;
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.25;}}
+
+  .scrub{
+    position:absolute; bottom:-1px; left:0;
+    height:1px;
+    background:var(--accent-primary);
+    width:0%;
+    transition:width .08s linear;
+  }
+
+  @media (max-width:760px){
+    .nav__links{display:none;}
+    .nav{padding:0 18px;}
+  }
+
+  /* ====== LAYOUT HELPERS ====== */
+  .wrap{max-width:1180px; margin:0 auto; padding:0 28px;}
+  @media (max-width:760px){.wrap{padding:0 18px;}}
+
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--accent-scope);
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:18px;
+  }
+  .eyebrow::before{content:"";width:18px; height:1px; background:var(--accent-scope); display:inline-block;}
+
+  .section{padding:120px 0;}
+  .section--tight{padding:90px 0;}
+  .section + .section{border-top:1px solid var(--hairline);}
+
+  h2.title{
+    font-family:var(--font-display);
+    font-weight:500;
+    font-size:clamp(28px,4vw,46px);
+    line-height:1.15;
+    margin:0 0 18px;
+    max-width:760px;
+  }
+  p.lede{
+    color:var(--ink-muted);
+    font-size:17px;
+    line-height:1.7;
+    max-width:560px;
+    margin:0;
+  }
+
+  /* ====== HERO ====== */
+  .hero{
+    min-height:calc(100vh - var(--bar-h)*2 - 64px);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:80px 0 60px;
+    position:relative;
+  }
+  .hero .eyebrow{justify-content:center;}
+  .hero p.lede{margin-left:auto; margin-right:auto;}
+  .hero__ctas{justify-content:center;}
+  .hero__name{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:clamp(48px,9vw,108px);
+    line-height:0.98;
+    margin:14px 0 26px;
+    letter-spacing:-.01em;
+  }
+  .hero__name em{
+    font-style:italic;
+    color:var(--accent-primary);
+    font-weight:500;
+  }
+  .hero p.lede{font-size:19px; margin-bottom:40px;}
+  .hero__ctas{display:flex; gap:16px; flex-wrap:wrap;}
+
+  .btn{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    text-decoration:none;
+    padding:15px 26px;
+    border-radius:2px;
+    display:inline-flex; align-items:center; gap:8px;
+    transition:transform .2s, background .2s, color .2s, border-color .2s;
+    cursor:pointer;
+    border:1px solid transparent;
+  }
+  .btn--solid{background:var(--accent-primary); color:#19120a;}
+  .btn--solid:hover{transform:translateY(-2px); background:#5b97e8;}
+  .btn--ghost{border-color:var(--hairline); color:var(--ink);}
+  .btn--ghost:hover{border-color:var(--ink-muted); transform:translateY(-2px);}
+
+  .hero__scroll{
+    position:absolute; bottom:0; left:50%;
+    transform:translateX(-50%);
+    font-family:var(--font-mono);
+    font-size:10px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    display:flex; align-items:center; gap:10px;
+  }
+  .hero__scroll .line{width:1px; height:34px; background:linear-gradient(var(--ink-faint), transparent); display:inline-block; animation:drop 2.2s ease-in-out infinite;}
+  @keyframes drop{0%{transform:scaleY(0); transform-origin:top;} 50%{transform:scaleY(1); transform-origin:top;} 51%{transform-origin:bottom;} 100%{transform:scaleY(0); transform-origin:bottom;}}
+
+  /* ====== REEL GRID ====== */
+  .reel-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:2px;
+    margin-top:56px;
+    background:var(--hairline);
+  }
+  @media (max-width:900px){.reel-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:600px){.reel-grid{grid-template-columns:1fr;}}
+
+  .clip{
+    background:var(--bg-void);
+    padding-bottom:6px;
+  }
+  .clip__thumb{
+    aspect-ratio:16/10;
+    border:1px dashed var(--hairline);
+    margin:10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    color:var(--ink-faint);
+    background:
+      radial-gradient(ellipse at top left, var(--bg-panel-2), var(--bg-void));
+    transition:border-color .25s, color .25s;
+    position:relative;
+    overflow:hidden;
+  }
+  .clip:hover .clip__thumb{border-color:var(--accent-primary); color:var(--ink-muted);}
+  .clip__thumb svg{width:30px; height:30px; opacity:.7;}
+  .clip__thumb small{
+    font-family:var(--font-mono);
+    font-size:9px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+  }
+  .clip__meta{padding:14px 14px 6px;}
+  .clip__top{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:6px;}
+  .clip__title{font-family:var(--font-body); font-weight:600; font-size:15px;}
+  .clip__dur{font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);}
+  .clip__client{font-size:13px; color:var(--ink-muted); margin-bottom:10px;}
+  .tags{display:flex; gap:6px; flex-wrap:wrap;}
+  .tag{
+    font-family:var(--font-mono);
+    font-size:9.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--accent-scope);
+    border:1px solid var(--hairline);
+    padding:3px 7px;
+    border-radius:2px;
+  }
+
+  /* ====== SERVICES / BENCH ====== */
+  .bench{
+    margin-top:50px;
+    border-top:1px solid var(--hairline);
+  }
+  .bench__row{
+    display:grid;
+    grid-template-columns:60px 1fr 1.3fr;
+    gap:24px;
+    padding:26px 0;
+    border-bottom:1px solid var(--hairline);
+    align-items:baseline;
+  }
+  @media (max-width:700px){
+    .bench__row{grid-template-columns:1fr; gap:6px; padding:20px 0;}
+  }
+  .bench__num{font-family:var(--font-mono); color:var(--ink-faint); font-size:12px;}
+  .bench__name{font-family:var(--font-display); font-size:22px; font-weight:500;}
+  .bench__desc{color:var(--ink-muted); font-size:14.5px; line-height:1.6;}
+
+  /* ====== PROCESS ====== */
+  .frames{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--hairline);
+    margin-top:54px;
+  }
+  @media (max-width:760px){.frames{grid-template-columns:1fr;}}
+  .frame{
+    background:var(--bg-void);
+    padding:34px 26px;
+  }
+  .frame__num{
+    font-family:var(--font-mono);
+    color:var(--accent-primary);
+    font-size:12px;
+    letter-spacing:.1em;
+    margin-bottom:16px;
+    display:block;
+  }
+  .frame h3{
+    font-family:var(--font-display);
+    font-size:20px;
+    font-weight:500;
+    margin:0 0 10px;
+  }
+  .frame p{color:var(--ink-muted); font-size:14px; line-height:1.7; margin:0;}
+
+  /* ====== CONTACT / CREDITS ====== */
+  .credits{
+    text-align:center;
+    padding:140px 0 100px;
+  }
+  .credits .eyebrow{justify-content:center;}
+  .credits h2{
+    font-family:var(--font-display);
+    font-size:clamp(32px,5.5vw,64px);
+    font-weight:500;
+    max-width:780px;
+    margin:0 auto 30px;
+    line-height:1.15;
+  }
+  .credits h2 em{color:var(--accent-primary); font-style:italic; font-weight:500;}
+  .credits__email{
+    font-family:var(--font-mono);
+    font-size:clamp(18px,3vw,26px);
+    color:var(--ink);
+    text-decoration:none;
+    border-bottom:1px solid var(--hairline);
+    padding-bottom:6px;
+    transition:border-color .2s, color .2s;
+  }
+  .credits__email:hover{color:var(--accent-primary); border-color:var(--accent-primary);}
+  .credits__socials{
+    margin-top:42px;
+    display:flex; gap:28px;
+    justify-content:center;
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+  }
+  .credits__socials a{text-decoration:none; transition:color .2s;}
+  .credits__socials a:hover{color:var(--ink);}
+
+  footer{
+    text-align:center;
+    padding:30px 0 10px;
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    color:var(--ink-faint);
+    letter-spacing:.06em;
+  }
+
+  /* reveal on scroll */
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{opacity:1; transform:translateY(0);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+    html{scroll-behavior:auto;}
+    .reveal{opacity:1; transform:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<div class="letterbox letterbox--top">
+  <span>2.39 : 1</span>
+  <div class="dots"><span></span><span></span><span></span></div>
+  <span>PORTFOLIO REEL</span>
+</div>
+
+<nav class="nav">
+  <div class="nav__mark">Z<span>A</span></div>
+  <div class="nav__links">
+    <a href="#reel">Reel</a>
+    <a href="#services">Services</a>
+    <a href="#process">Process</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <div class="nav__tc"><span class="rec" aria-hidden="true"></span><span id="tcDisplay">00:00:00:00</span></div>
+  <div class="scrub" id="scrubBar"></div>
+</nav>
+
+<div class="letterbox letterbox--bottom">
+  <span id="scrollPct">SCROLL 00%</span>
+  <span>SHOT ON IMAGINATION</span>
+</div>
+
+<!-- ============ HERO ============ -->
+<section class="hero wrap" id="top">
+  <div class="eyebrow">00:00:00:00 — SLATE</div>
+  <div class="reveal in">
+    <div style="font-family:var(--font-mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-muted);">
+      Video Editor &amp; Motion Designer
+    </div>
+    <h1 class="hero__name">Zahir<br><em>Anas</em></h1>
+    <p class="lede">I cut footage into stories and build motion that carries a brand's voice — from narrative edits to kinetic type, color, and the occasional dimensional/stop-motion piece. Based in [Your City], working with clients everywhere.</p>
+    <div class="hero__ctas">
+      <a href="#reel" class="btn btn--solid">Watch the reel ▸</a>
+      <a href="#contact" class="btn btn--ghost">Start a project</a>
+    </div>
+  </div>
+  <div class="hero__scroll"><span class="line"></span> Scrub to explore</div>
+</section>
+
+<!-- ============ REEL ============ -->
+<section class="section" id="reel">
+  <div class="wrap">
+    <div class="eyebrow reveal">00:01:00:00 — SELECTED CUTS</div>
+    <h2 class="title reveal">A few favorites, pulled off the timeline.</h2>
+    <p class="lede reveal">Replace each frame below with a real thumbnail or embedded clip — these are placeholders, ready for your reel.</p>
+
+    <div class="reel-grid">
+
+      <article class="clip reveal">
+        <div class="clip__thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+          <small>Drop clip / thumbnail here</small>
+        </div>
+        <div class="clip__meta">
+          <div class="clip__top"><span class="clip__title">Brand Film</span><span class="clip__dur">2:14</span></div>
+          <div class="clip__client">[Client / Brand name]</div>
+          <div class="tags"><span class="tag">Edit</span><span class="tag">Color</span></div>
+        </div>
+      </article>
+
+      <article class="clip reveal">
+        <div class="clip__thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+          <small>Drop clip / thumbnail here</small>
+        </div>
+        <div class="clip__meta">
+          <div class="clip__top"><span class="clip__title">Music Video</span><span class="clip__dur">3:02</span></div>
+          <div class="clip__client">[Artist name]</div>
+          <div class="tags"><span class="tag">Edit</span><span class="tag">Motion</span></div>
+        </div>
+      </article>
+
+      <article class="clip reveal">
+        <div class="clip__thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+          <small>Drop clip / thumbnail here</small>
+        </div>
+        <div class="clip__meta">
+          <div class="clip__top"><span class="clip__title">Product Launch</span><span class="clip__dur">0:45</span></div>
+          <div class="clip__client">[Brand name]</div>
+          <div class="tags"><span class="tag">Motion</span><span class="tag">3D</span></div>
+        </div>
+      </article>
+
+      <article class="clip reveal">
+        <div class="clip__thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+          <small>Drop clip / thumbnail here</small>
+        </div>
+        <div class="clip__meta">
+          <div class="clip__top"><span class="clip__title">Documentary Short</span><span class="clip__dur">6:30</span></div>
+          <div class="clip__client">[Project title]</div>
+          <div class="tags"><span class="tag">Edit</span><span class="tag">Sound</span></div>
+        </div>
+      </article>
+
+      <article class="clip reveal">
+        <div class="clip__thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+          <small>Drop clip / thumbnail here</small>
+        </div>
+        <div class="clip__meta">
+          <div class="clip__top"><span class="clip__title">Social Campaign</span><span class="clip__dur">0:30</span></div>
+          <div class="clip__client">[Brand name]</div>
+          <div class="tags"><span class="tag">Edit</span><span class="tag">Motion</span><span class="tag">Color</span></div>
+        </div>
+      </article>
+
+      <article class="clip reveal">
+        <div class="clip__thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+          <small>Drop clip / thumbnail here</small>
+        </div>
+        <div class="clip__meta">
+          <div class="clip__top"><span class="clip__title">Title Sequence</span><span class="clip__dur">1:10</span></div>
+          <div class="clip__client">[Project name]</div>
+          <div class="tags"><span class="tag">Motion</span><span class="tag">3D</span></div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ SERVICES ============ -->
+<section class="section" id="services">
+  <div class="wrap">
+    <div class="eyebrow reveal">00:02:30:00 — ON THE BENCH</div>
+    <h2 class="title reveal">What's on the timeline when you hire me.</h2>
+
+    <div class="bench">
+      <div class="bench__row reveal">
+        <span class="bench__num">01</span>
+        <span class="bench__name">Video Editing</span>
+        <span class="bench__desc">Narrative cuts, pacing, and rhythm — built around the story, not the template.</span>
+      </div>
+      <div class="bench__row reveal">
+        <span class="bench__num">02</span>
+        <span class="bench__name">Motion Graphics</span>
+        <span class="bench__desc">Kinetic type, animated logos, and graphics that move with intention.</span>
+      </div>
+      <div class="bench__row reveal">
+        <span class="bench__num">03</span>
+        <span class="bench__name">Color Grading</span>
+        <span class="bench__desc">Mood and consistency across a project, frame to frame.</span>
+      </div>
+      <div class="bench__row reveal">
+        <span class="bench__num">04</span>
+        <span class="bench__name">Sound Design</span>
+        <span class="bench__desc">Mix, sync, and the small details that make a cut feel finished.</span>
+      </div>
+      <div class="bench__row reveal">
+        <span class="bench__num">05</span>
+        <span class="bench__name">Stop-Motion &amp; 3D</span>
+        <span class="bench__desc">Dimensional, character-driven animation when flat motion isn't enough.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROCESS ============ -->
+<section class="section" id="process">
+  <div class="wrap">
+    <div class="eyebrow reveal">00:03:45:00 — BEHIND THE CUT</div>
+    <h2 class="title reveal">Every project starts with the footage, not a template.</h2>
+    <p class="lede reveal">A short version of how a project usually moves, start to delivery.</p>
+
+    <div class="frames">
+      <div class="frame reveal">
+        <span class="frame__num">01 — ASSEMBLY</span>
+        <h3>Rough cut</h3>
+        <p>Footage, story, and structure first. Get the bones right before anything else.</p>
+      </div>
+      <div class="frame reveal">
+        <span class="frame__num">02 — REFINEMENT</span>
+        <h3>Pace &amp; motion</h3>
+        <p>Trim for rhythm, add the motion and sound that carry the tone.</p>
+      </div>
+      <div class="frame reveal">
+        <span class="frame__num">03 — FINAL GRADE</span>
+        <h3>Polish &amp; deliver</h3>
+        <p>Color, final mix, export specs for wherever it's going — and delivered on time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section class="section credits" id="contact">
+  <div class="wrap">
+    <div class="eyebrow">00:05:00:00 — ROLL CREDITS</div>
+    <h2 class="reveal">Got a project? <em>Let's cut it together.</em></h2>
+    <a class="credits__email" href="mailto:your@email.com">your@email.com</a>
+    <!-- REPLACE: email address -->
+    <div class="credits__socials">
+      <a href="#">Instagram — @yourhandle</a>
+      <a href="#">YouTube — @yourhandle</a>
+      <a href="#">Behance — /yourhandle</a>
+      <!-- REPLACE: real social links -->
+    </div>
+  </div>
+</section>
+
+<footer>ZAHIR ANAS — EDITED &amp; DESIGNED IN [CITY] — BUILT FRAME BY FRAME</footer>
+
+<script>
+  // ---- running timecode + scroll scrubber ----
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tc = document.getElementById('tcDisplay');
+  const scrub = document.getElementById('scrubBar');
+  const pct = document.getElementById('scrollPct');
+  const FPS = 24;
+  const TOTAL_FRAMES = (5*60) * FPS; // maps to the 00:05:00:00 "runtime" used in section eyebrows
+
+  function fmt(totalFrames){
+    totalFrames = Math.max(0, Math.floor(totalFrames));
+    const ff = totalFrames % FPS;
+    const totalSec = Math.floor(totalFrames / FPS);
+    const ss = totalSec % 60;
+    const mm = Math.floor(totalSec / 60) % 60;
+    const hh = Math.floor(totalSec / 3600);
+    const p = n => String(n).padStart(2,'0');
+    return `${p(hh)}:${p(mm)}:${p(ss)}:${p(ff)}`;
+  }
+
+  function onScroll(){
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    const frac = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+    scrub.style.width = (frac*100).toFixed(1) + '%';
+    pct.textContent = 'SCROLL ' + String(Math.round(frac*100)).padStart(2,'0') + '%';
+    tc.textContent = fmt(frac * TOTAL_FRAMES);
+  }
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if(!ticking){
+      requestAnimationFrame(() => { onScroll(); ticking = false; });
+      ticking = true;
+    }
+  });
+  onScroll();
+
+  // ---- reveal on scroll ----
+  if(!reduced){
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in'); });
+    }, {threshold:0.15});
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  } else {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+  }
+</script>
+
+</body>
+</html>
